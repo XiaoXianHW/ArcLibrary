@@ -14,12 +14,13 @@ a research journal, or a public field guide.
 - 🔎 **Instant ⌘K search** powered by Fuse.js over a build-time index.
 - ✨ **AI assistant** that reads *your* MDX, navigates the user to the right page, and highlights the matching paragraph automatically.
 - 🧱 **MDX components** — callouts, key-value tables, side-by-side compare, numbered steps, mermaid diagrams, KaTeX math.
-- 🌗 **Dark-first** theme with light-mode parity.
 - 🌐 **Built-in i18n** (`zh` default, `en` available).
-- 🛡️ `/api/chat` is **rate-limited**, **origin-checked**, and writes a structured **audit log** for every request.
 - 📈 **First-class SEO** — per-topic OG / Twitter Card metadata, auto-generated `sitemap.xml` / `robots.txt`, dynamic OG cover image.
 
 > 中文文档 → [`README_ZH.md`](./README_ZH.md)
+
+![演示](./docs/img/arclibrary.png)
+![演示](./docs/img/arc_llm.png)
 
 ---
 
@@ -70,6 +71,11 @@ Routes follow the file structure:
 The taxonomy is data-driven: edit `CATEGORIES` / `LEVELS` in
 `src/lib/config.ts` and create the matching `content/<slug>/<level>/`
 folders. Sidebar, breadcrumbs, search index and AI tools all pick it up.
+
+---
+
+## OG
+![OG](./docs/img/og.png)
 
 ---
 
