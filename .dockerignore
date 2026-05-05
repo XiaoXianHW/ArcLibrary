@@ -1,0 +1,32 @@
+# VCS / IDE
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Build artefacts
+node_modules
+.next
+out
+dist
+*.tsbuildinfo
+
+# Local env / secrets — Docker images should NEVER carry these
+.env
+.env.*
+!.env.example
+
+# Misc
+.DS_Store
+*.log
+README*.md
+DESIGN*.md
+AUTHORING*.md
+LICENSE
+.vercel
+.turbo
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.yaml

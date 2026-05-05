@@ -1,0 +1,12 @@
+{
+  "en": {
+    "entries": 1096,
+    "bytes": 435953,
+    "file": "/search-index/en.json"
+  },
+  "zh": {
+    "entries": 1096,
+    "bytes": 377622,
+    "file": "/search-index/zh.json"
+  }
+}

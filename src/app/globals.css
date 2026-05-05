@@ -1,0 +1,622 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+@import "katex/dist/katex.min.css";
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e0e10;
+  --bg-subtle: #161618;
+  --bg-elevated: #1c1c1f;
+  --border: #2a2a2f;
+  --border-strong: #3a3a40;
+  /* Bumped one step brighter for better contrast on dark backgrounds. */
+  --fg: #ededed;
+  --fg-muted: #b5b5bd;
+  --fg-subtle: #8a8a92;
+  --code-bg: #131316;
+  --highlight-bg: rgba(255, 213, 92, 0.38);
+  --highlight-bg-strong: rgba(255, 213, 92, 0.6);
+  --highlight-ring: rgba(255, 213, 92, 0.8);
+  --highlight-fg: #fff7c2;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-subtle: #f4f4f6;
+  --bg-elevated: #ececef;
+  --border: #d4d4d8;
+  --border-strong: #a1a1aa;
+  --fg: #09090b;
+  --fg-muted: #3f3f46;
+  --fg-subtle: #71717a;
+  --code-bg: #f1f1f3;
+  --highlight-bg: rgba(255, 213, 0, 0.55);
+  --highlight-bg-strong: rgba(255, 196, 0, 0.85);
+  --highlight-ring: rgba(217, 119, 6, 0.6);
+  --highlight-fg: #1a1a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+/* Inline match marker — stays solid yellow after the sweep finishes so the
+   user can see the exact phrase the AI matched. */
+.arc-highlight {
+  background-color: var(--highlight-bg-strong);
+  color: var(--highlight-fg);
+  padding: 0.05em 0.2em;
+  margin: 0 -0.05em;
+  border-radius: 3px;
+  font-weight: 600;
+  transition: background-color 0.2s ease-out;
+}
+.arc-highlight.arc-highlight--primary {
+  background-color: var(--highlight-bg-strong);
+}
+
+/* Block highlight — wraps the whole containing paragraph / heading / list-item
+   that the matched phrase lives in. The resting state is a soft yellow tint
+   that stays visible after the sweep, making the relevant section unambiguously
+   visible from anywhere on the page. */
+.arc-highlight-block {
+  position: relative;
+  background-color: var(--highlight-bg);
+  border-radius: 6px;
+  padding: 0.2em 0.45em;
+  margin: 0 -0.45em;
+  box-shadow: 0 0 0 1px var(--highlight-ring);
+  /* Bring the resting body text colour back to high-contrast inside the
+     highlighted block, otherwise the muted body grey washes against yellow. */
+  color: var(--fg);
+}
+.arc-highlight-block,
+.arc-highlight-block * {
+  color: var(--fg) !important;
+}
+
+/* Sweep overlay — gives the "per-character paint sweep" feel by uncovering
+   the resting highlight from left to right while a darker top layer rolls
+   in then fades out. This is purely visual — the underlying text DOM is
+   never split, so links / code / katex stay intact. */
+.arc-highlight-block::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to right,
+    var(--highlight-bg-strong) 0%,
+    var(--highlight-bg-strong) 50%,
+    var(--highlight-ring) 50%,
+    var(--highlight-ring) 52%,
+    transparent 52%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  animation: arc-highlight-paint 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+@keyframes arc-highlight-paint {
+  0% {
+    background-position: 100% 0;
+    opacity: 1;
+  }
+  70% {
+    background-position: 0% 0;
+    opacity: 1;
+  }
+  100% {
+    background-position: 0% 0;
+    opacity: 0;
+  }
+}
+
+/* Soft pulse on the ring around the block once the paint sweep finishes,
+   keeping focus on the highlighted region for ~1s longer. */
+.arc-highlight-block.arc-highlight-block--primary {
+  animation: arc-highlight-block-pulse 2s ease-out 1;
+}
+@keyframes arc-highlight-block-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--highlight-ring), 0 0 0 0 var(--highlight-ring);
+  }
+  40% {
+    box-shadow: 0 0 0 4px var(--highlight-ring), 0 0 0 12px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 1px var(--highlight-ring), 0 0 0 24px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc-highlight-block::before {
+    animation: none;
+    opacity: 0;
+  }
+  .arc-highlight-block.arc-highlight-block--primary {
+    animation: none;
+  }
+}
+
+/* Reveal-on-scroll */
+.arc-reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+}
+.arc-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arc-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* Hairline */
+.hairline {
+  border: 1px solid var(--border);
+}
+
+/* Wikipedia-style article header (used on topic detail pages) */
+.wiki-title {
+  font-family:
+    "Source Han Serif", "Noto Serif SC", "Songti SC", Georgia, "Times New Roman",
+    serif;
+  font-weight: 600;
+  font-size: 2.6rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  margin: 0;
+}
+.wiki-tagline {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+.wiki-rule {
+  height: 1px;
+  background: var(--border);
+  margin: 1.25rem 0 1.5rem;
+}
+.wiki-lead {
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--fg-muted);
+  max-width: 72ch;
+}
+.wiki-lead strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Prose */
+.prose-arc {
+  color: var(--fg);
+  font-size: 16.5px;
+  line-height: 1.85;
+  max-width: none;
+}
+.prose-arc ul {
+  list-style-type: disc;
+  padding-left: 1.4rem;
+}
+.prose-arc ol {
+  list-style-type: decimal;
+  padding-left: 1.4rem;
+}
+.prose-arc ul ul {
+  list-style-type: circle;
+}
+.prose-arc ul ul ul {
+  list-style-type: square;
+}
+.prose-arc li {
+  margin: 0.35rem 0;
+}
+.prose-arc li::marker {
+  color: var(--fg-subtle);
+}
+.prose-arc > :first-child {
+  margin-top: 0 !important;
+}
+.prose-arc h1,
+.prose-arc h2,
+.prose-arc h3,
+.prose-arc h4 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  scroll-margin-top: 100px;
+}
+.prose-arc h1 {
+  font-size: 2.25rem;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+}
+.prose-arc h2 {
+  font-size: 1.55rem;
+  margin: 3.25rem 0 1.1rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.prose-arc h2:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 2.25rem;
+}
+.prose-arc h3 {
+  font-size: 1.15rem;
+  margin: 2rem 0 0.75rem;
+}
+.prose-arc h4 {
+  font-size: 1rem;
+  margin: 1.5rem 0 0.5rem;
+  color: var(--fg-muted);
+}
+.prose-arc p {
+  margin: 1.15rem 0;
+  line-height: 1.85;
+  color: var(--fg-muted);
+}
+.prose-arc a {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-strong);
+  transition: border-color 0.15s, color 0.15s;
+}
+.prose-arc a:hover {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
+}
+.prose-arc ul,
+.prose-arc ol {
+  padding-left: 1.5em;
+  margin: 1.1rem 0;
+}
+.prose-arc li {
+  margin: 0.55rem 0;
+  line-height: 1.8;
+  color: var(--fg-muted);
+}
+.prose-arc li > p { margin: 0.35rem 0; }
+.prose-arc li > ul,
+.prose-arc li > ol { margin: 0.35rem 0; }
+.prose-arc li::marker {
+  color: var(--fg-subtle);
+}
+.prose-arc strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+.prose-arc em {
+  color: var(--fg);
+  font-style: italic;
+}
+.prose-arc blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding: 0.4rem 1.1rem;
+  margin: 1.5rem 0;
+  color: var(--fg-muted);
+}
+.prose-arc blockquote p {
+  margin: 0.4rem 0;
+}
+.prose-arc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+.prose-arc th,
+.prose-arc td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+}
+.prose-arc th {
+  background: var(--bg-subtle);
+  color: var(--fg);
+  font-weight: 600;
+}
+.prose-arc tr:nth-child(even) td {
+  background: var(--bg-subtle);
+}
+.prose-arc hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+.prose-arc :not(pre) > code {
+  background: var(--bg-elevated);
+  color: var(--fg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.88em;
+  border: 1px solid var(--border);
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+.prose-arc pre {
+  background: var(--code-bg) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.1rem 1.2rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  margin: 1.5rem 0;
+}
+.prose-arc pre code {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--fg);
+  background: transparent !important;
+  padding: 0;
+}
+.prose-arc img {
+  max-width: 100%;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+/* shiki theme — dual theme switching via rehype-pretty-code */
+:root[data-theme="dark"] .shiki,
+:root[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: transparent !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+:root[data-theme="light"] .shiki,
+:root[data-theme="light"] .shiki span {
+  color: var(--shiki-light) !important;
+  background-color: transparent !important;
+  font-style: var(--shiki-light-font-style) !important;
+  font-weight: var(--shiki-light-font-weight) !important;
+  text-decoration: var(--shiki-light-text-decoration) !important;
+}
+.prose-arc figure[data-rehype-pretty-code-figure] {
+  margin: 1.5rem 0;
+}
+.prose-arc [data-rehype-pretty-code-title] {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  background: var(--bg-subtle);
+  padding: 0.45rem 0.95rem;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+.prose-arc [data-rehype-pretty-code-title] + pre {
+  border-radius: 0 0 8px 8px;
+  margin-top: 0;
+}
+.prose-arc code[data-line-numbers] {
+  counter-reset: line;
+}
+.prose-arc code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1.5rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--fg-subtle);
+}
+
+/* Anchor link in headings */
+.prose-arc h2 a.anchor,
+.prose-arc h3 a.anchor {
+  opacity: 0;
+  margin-left: 0.5rem;
+  border: none;
+  font-weight: 400;
+  color: var(--fg-subtle);
+  font-size: 0.85em;
+  transition: opacity 0.15s;
+}
+.prose-arc h2:hover a.anchor,
+.prose-arc h3:hover a.anchor {
+  opacity: 1;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-subtle);
+}
+
+/* Hide scrollbar but keep scrolling */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* AI panel pushes main content (no overlay) */
+:root {
+  --ai-panel-w: 0px;
+}
+@media (min-width: 768px) {
+  :root[data-ai-open="true"] {
+    --ai-panel-w: 480px;
+  }
+}
+body {
+  padding-right: var(--ai-panel-w);
+  transition: padding-right 300ms ease;
+}
+
+/* AI assistant chat markdown */
+.ai-md > * { margin: 0; }
+.ai-md > * + * { margin-top: 0.6rem; }
+.ai-md p { line-height: 1.7; }
+.ai-md h1, .ai-md h2, .ai-md h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.ai-md h1 { font-size: 1.05rem; }
+.ai-md h2 { font-size: 1rem; }
+.ai-md h3 { font-size: 0.95rem; }
+.ai-md ul, .ai-md ol { padding-left: 1.25rem; }
+.ai-md li { margin: 0.2rem 0; line-height: 1.65; }
+.ai-md li::marker { color: var(--fg-subtle); }
+.ai-md blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 0.7rem;
+  color: var(--fg-muted);
+}
+.ai-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.ai-md th, .ai-md td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.55rem;
+  text-align: left;
+}
+.ai-md th { background: var(--bg-subtle); }
+.ai-md hr { border: none; border-top: 1px solid var(--border); }
+.ai-md strong { color: var(--fg); font-weight: 600; }
+
+/* Mermaid diagrams. Container styling is handled by Tailwind on the wrapper
+   in <Mermaid />; here we only constrain the inner SVG so it stays inside
+   the box at default zoom and centers nicely. */
+.mermaid-block > div {
+  display: flex;
+  justify-content: center;
+}
+.mermaid-block svg {
+  max-width: 100%;
+  height: auto;
+}
+/* Mermaid uses <foreignObject> to host HTML labels inside SVG nodes. When a
+   label contains a manual line break (<br/>), the foreignObject's intrinsic
+   height is computed against a single-line measurement and the lower line is
+   clipped by the surrounding rect. Letting overflow be visible keeps the full
+   wrapped text legible while the rect stays the same size, which is the
+   accepted workaround across mermaid issues #2820 / #4537. */
+.mermaid-block svg foreignObject {
+  overflow: visible;
+}
+.mermaid-block svg foreignObject .nodeLabel,
+.mermaid-block svg foreignObject .edgeLabel,
+.mermaid-block svg foreignObject .label {
+  white-space: normal;
+  line-height: 1.35;
+  text-align: center;
+  display: inline-block;
+}
+/* Some flowchart node shapes wrap labels in a span chain that defaults to
+   inline-block with a fixed width — force the inner span tree to wrap so
+   long Chinese phrases don't extend past the rect. */
+.mermaid-block svg .nodeLabel p,
+.mermaid-block svg .nodeLabel span {
+  white-space: normal;
+}
+
+/* Zoomed-in version inside the lightbox: drop the max-width cap so the SVG
+   can grow as wide as it needs and the user can pan via the scroll
+   container around it. */
+.mermaid-zoomed svg {
+  max-width: none;
+  width: auto;
+  height: auto;
+  min-width: 320px;
+  /* Cap height so super-tall diagrams fit modern phones and stay scrollable. */
+  max-height: calc(100vh - 8rem);
+}
+@media (min-width: 768px) {
+  .mermaid-zoomed svg {
+    /* On wider screens we let it grow further so detail is legible. */
+    min-width: 720px;
+    max-height: calc(100vh - 10rem);
+  }
+}
+
+/* ASCII art block (auto-detected fenced) */
+.prose-arc pre.ascii {
+  background: var(--bg-subtle) !important;
+  border-style: dashed;
+  white-space: pre;
+  line-height: 1.55;
+}
+
+/* Code block toolbar */
+.code-block { position: relative; }
+.code-block .code-toolbar {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.code-block:hover .code-toolbar { opacity: 1; }
+.code-block .code-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--fg-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.code-block .code-toolbar button:hover {
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+
+/* KaTeX overrides for theme */
+.katex { color: var(--fg); }
+.prose-arc .katex-display { margin: 1.25rem 0; overflow-x: auto; overflow-y: hidden; }
