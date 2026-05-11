@@ -282,3 +282,26 @@ export function getDict(locale: string | undefined | null): Dict {
   if (locale === "en") return dict.en;
   return dict.zh;
 }
+
+/**
+ * Parse an `Accept-Language` header and return the best supported locale.
+ * Falls back to {@link DEFAULT_LOCALE} when no tag matches.
+ */
+export function pickLocaleFromAcceptLanguage(header: string | null): Locale {
+  if (!header) return DEFAULT_LOCALE;
+  const wanted = header
+    .split(",")
+    .map((part) => {
+      const [tag, qPart] = part.trim().split(";");
+      const q = qPart?.startsWith("q=") ? Number(qPart.slice(2)) : 1;
+      return { tag: tag.toLowerCase(), q: Number.isFinite(q) ? q : 1 };
+    })
+    .sort((a, b) => b.q - a.q);
+
+  for (const { tag } of wanted) {
+    for (const locale of LOCALES) {
+      if (tag === locale || tag.startsWith(`${locale}-`)) return locale;
+    }
+  }
+  return DEFAULT_LOCALE;
+}
